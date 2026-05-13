@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PSQL_URL")
+}
+
+model Account {
+  id                Int      @id @default(autoincrement())
+  token_usage       Int      @default(0)
+  token_limit       Int
+  subscription_plan String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime
+  User              User[]
+}
+
+model Config {
+  id    Int    @id(map: "config_pk") @default(autoincrement())
+  name  String @unique(map: "config_unique") @db.VarChar
+  value Json?  @db.Json
+}
+
+model Cookie {
+  id         Int       @id @default(autoincrement())
+  token      String?
+  attempts   Int       @default(0)
+  success    Int       @default(0)
+  failed     Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+  blockedAt  DateTime?
+  active     Boolean   @default(true)
+  value      String?
+  platform   String?
+  status     String    @default("IDLE")
+  empty_room Int?      @default(0)
+  email      String?
+  password   String?
+}
+
+model Fingerprint {
+  visitorId           String            @id
+  fonts               Json?
+  fontPreferences     Json?
+  audio               Float?
+  screenFrame         Json?
+  canvas              Json?
+  languages           Json?
+  colorDepth          Int?
+  deviceMemory        Int?
+  screenResolution    Json?
+  hardwareConcurrency Int?
+  timezone            String?
+  sessionStorage      Boolean?
+  localStorage        Boolean?
+  indexedDB           Boolean?
+  openDatabase        Boolean?
+  cpuClass            String?
+  platform            String?
+  plugins             Json?
+  touchSupport        Json?
+  vendor              String?
+  vendorFlavors       Json?
+  cookiesEnabled      Boolean?
+  colorGamut          String?
+  forcedColors        Boolean?
+  monochrome          Int?
+  contrast            Int?
+  reducedMotion       Boolean?
+  reducedTransparency Boolean?
+  hdr                 Boolean?
+  math                Json?
+  pdfViewerEnabled    Boolean?
+  architecture        Int?
+  applePay            Int?
+  audioBaseLatency    Int?
+  dateTimeLocale      String?
+  webGlBasics         Json?
+  webGlExtensions     Json?
+  proRequestId        String?
+  proVisitorId        String?
+  FingerprintLogs     FingerprintLogs[]
+  Result              Result[]
+}
+
+model FingerprintLogs {
+  id          Int          @id @default(autoincrement())
+  ip          String?
+  proxy_id    Int
+  fp_id       String?
+  resultId    Int
+  status      String
+  freezeUntil DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime
+  Fingerprint Fingerprint? @relation(fields: [fp_id], references: [visitorId])
+  Proxy       Proxy        @relation(fields: [proxy_id], references: [id])
+  Result      Result       @relation(fields: [resultId], references: [id])
+}
+
+model Job {
+  id     Int      @id @default(autoincrement())
+  status String
+  Result Result[]
+}
+
+model Proxy {
+  id              Int               @id @default(autoincrement())
+  provider        String
+  hostname        String
+  port            Int
+  username        String
+  password        String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  weight          Int?
+  active          Boolean?          @default(true)
+  FingerprintLogs FingerprintLogs[]
+  Result          Result[]
+}
+
+model Result {
+  id              Int               @id @default(autoincrement())
+  user_id         String
+  url             String
+  status          String
+  error           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  fp_id           String?
+  ip              String?
+  job_id          Int?
+  priority        Int               @default(1)
+  proxy_id        Int?
+  s3_url          String?
+  scrapeEnd       DateTime?
+  scrapeStart     DateTime?
+  solution_id     Int?
+  stepId          String?
+  type            String?
+  FingerprintLogs FingerprintLogs[]
+  Fingerprint     Fingerprint?      @relation(fields: [fp_id], references: [visitorId])
+  Job             Job?              @relation(fields: [job_id], references: [id])
+  Proxy           Proxy?            @relation(fields: [proxy_id], references: [id])
+  Solution        Solution?         @relation(fields: [solution_id], references: [id])
+  User            User              @relation(fields: [user_id], references: [id])
+}
+
+model Solution {
+  id      Int      @id @default(autoincrement())
+  name    String
+  servers Json[]
+  active  Boolean  @default(true)
+  Result  Result[]
+}
+
+model User {
+  id          String    @id
+  token_usage Int       @default(0)
+  limit_token Int       @default(0)
+  account_id  Int       @default(1)
+  expiredAt   DateTime?
+  Result      Result[]
+  Account     Account   @relation(fields: [account_id], references: [id])
+}
+
+model request_lb {
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  id            Int       @id(map: "request_lb_pk") @default(autoincrement())
+  endpoint      String?
+  method        String?   @db.VarChar
+  response_time Int?
+  token         String?   @db.VarChar
+  status_code   Int?
+}

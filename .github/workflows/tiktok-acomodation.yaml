@@ -1,0 +1,32 @@
+#de
+name: Deploy Tiktok Accomodation
+
+on:
+  push:
+    branches:
+      - feat/tiktok-scraper-accomodation
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy"
+        required: true
+        default: "feat/tiktok-scraper-accomodation"
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        server: [all-tiktok]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Deploy on ${{ matrix.server }}
+        run: |
+          ssh ${{ matrix.server }} << 'EOF'
+            cd tiktok-accomodation 
+            git pull
+            npm install
+            pm2 restart tiktok-accomodation
+          EOF
